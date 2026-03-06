@@ -1,0 +1,53 @@
+{
+  "schema_version": "1.0.0",
+  "signal_id": "sig-20260306-153000-etf-stock-daily-v1",
+  "account_id": "acct-main-a",
+  "as_of": "2026-03-06T15:30:00+08:00",
+  "strategy_id": "etf_stock_daily_v1",
+  "universe": [
+    "510300.SH",
+    "159915.SZ",
+    "600519.SH",
+    "000333.SZ"
+  ],
+  "portfolio": {
+    "cash_target_pct": 0.12,
+    "targets": [
+      {
+        "symbol": "510300.SH",
+        "target_pct": 0.38,
+        "confidence": 0.71,
+        "reason": "index_beta"
+      },
+      {
+        "symbol": "159915.SZ",
+        "target_pct": 0.24,
+        "confidence": 0.63,
+        "reason": "style_diversification"
+      },
+      {
+        "symbol": "600519.SH",
+        "target_pct": 0.14,
+        "confidence": 0.56,
+        "reason": "quality_leader"
+      },
+      {
+        "symbol": "000333.SZ",
+        "target_pct": 0.12,
+        "confidence": 0.54,
+        "reason": "defensive_industrial"
+      }
+    ]
+  },
+  "constraints": {
+    "max_turnover_pct": 0.18,
+    "max_single_position_pct": 0.4,
+    "max_daily_loss_pct": 0.01,
+    "max_drawdown_pct": 0.08,
+    "rebalance": "DAILY_CLOSE",
+    "min_avg_daily_amount": 200000000,
+    "exclude_tags": ["ST", "退市", "停牌"]
+  },
+  "checksum": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+  "idempotency_key": "etf_stock_daily_v1|2026-03-06T15:30:00+08:00|acct-main-a"
+}

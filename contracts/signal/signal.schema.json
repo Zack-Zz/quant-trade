@@ -1,0 +1,173 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quant-trade/contracts/signal/v1/signal.schema.json",
+  "title": "Target Portfolio Signal v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "signal_id",
+    "account_id",
+    "as_of",
+    "strategy_id",
+    "portfolio",
+    "constraints"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "signal_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128,
+      "pattern": "^[a-zA-Z0-9._:-]+$"
+    },
+    "account_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-zA-Z0-9._:-]+$"
+    },
+    "as_of": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "strategy_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "universe": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/symbol"},
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "portfolio": {
+      "type": "object",
+      "required": ["cash_target_pct", "targets"],
+      "additionalProperties": false,
+      "properties": {
+        "cash_target_pct": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["symbol", "target_pct"],
+            "additionalProperties": false,
+            "properties": {
+              "symbol": {"$ref": "#/$defs/symbol"},
+              "target_pct": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "reason": {
+                "type": "string",
+                "maxLength": 256
+              }
+            }
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      }
+    },
+    "constraints": {
+      "type": "object",
+      "required": ["max_turnover_pct", "max_single_position_pct", "rebalance"],
+      "additionalProperties": false,
+      "properties": {
+        "max_turnover_pct": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "max_single_position_pct": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1
+        },
+        "max_daily_loss_pct": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.01
+        },
+        "max_drawdown_pct": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.08
+        },
+        "rebalance": {
+          "type": "string",
+          "enum": ["DAILY_CLOSE", "WEEKLY_CLOSE", "MONTHLY_CLOSE"]
+        },
+        "min_avg_daily_amount": {
+          "type": "number",
+          "minimum": 0
+        },
+        "exclude_tags": {
+          "type": "array",
+          "items": {"type": "string", "maxLength": 32},
+          "uniqueItems": true
+        }
+      }
+    },
+    "checksum": {
+      "type": "string",
+      "pattern": "^sha256:[a-fA-F0-9]{64}$"
+    },
+    "idempotency_key": {
+      "type": "string",
+      "description": "Derived as strategy_id + as_of + account_id"
+    }
+  },
+  "$defs": {
+    "symbol": {
+      "type": "string",
+      "pattern": "^[0-9]{6}\\.(SH|SZ)$"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "portfolio": {
+            "properties": {
+              "cash_target_pct": {"type": "number"},
+              "targets": {"type": "array"}
+            },
+            "required": ["cash_target_pct", "targets"]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "portfolio": {
+            "properties": {
+              "targets": {
+                "contains": {
+                  "type": "object",
+                  "required": ["target_pct"]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

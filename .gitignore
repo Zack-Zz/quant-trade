@@ -41,3 +41,21 @@ build/
 
 ### Mac OS ###
 .DS_Store
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+
+# Coverage
+coverage/
+*.coverage
+htmlcov/
+
+# Runtime
+*.log
+
+# Docker
+.env
+
+quant-research/src/*.egg-info/

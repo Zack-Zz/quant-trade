@@ -1,0 +1,41 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: quant-trade-postgres
+    environment:
+      POSTGRES_DB: quant_trade
+      POSTGRES_USER: quant
+      POSTGRES_PASSWORD: quant
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  quant-research:
+    build:
+      context: ../quant-research
+    container_name: quant-research
+    environment:
+      TZ: Asia/Shanghai
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+
+  trade-executor:
+    build:
+      context: ../trade-executor
+    container_name: trade-executor
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/quant_trade
+      DB_USER: quant
+      DB_PASSWORD: quant
+      BROKER_MODE: paper
+      TZ: Asia/Shanghai
+    depends_on:
+      - postgres
+
+volumes:
+  pgdata:
