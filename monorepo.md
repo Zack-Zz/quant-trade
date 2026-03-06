@@ -8,7 +8,7 @@ quant-stack/
     api/
       signal-schema.json
   contracts/
-    signal/                 # 协议中心（强烈建议）
+    signal/                 # 协议中心
       signal.schema.json
       examples/
         etf_trend_v1.json
