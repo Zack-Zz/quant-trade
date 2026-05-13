@@ -33,6 +33,10 @@ A-share quant trading monorepo with Python signal generation and Java execution.
 ./scripts/dev-down.sh
 ```
 
+## Development Rules
+
+Project-specific development and AI execution rules live in [docs/standards/project_development_rules.md](docs/standards/project_development_rules.md).
+
 ## Safety Notes
 
 - No hardcoded production credentials

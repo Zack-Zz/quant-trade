@@ -1,0 +1,5 @@
+symbol,name,asset_type,exchange,lot_size
+510300.SH,沪深300ETF,ETF,SH,100
+159915.SZ,创业板ETF,ETF,SZ,100
+600519.SH,贵州茅台,STOCK,SH,100
+000333.SZ,美的集团,STOCK,SZ,100

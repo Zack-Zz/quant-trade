@@ -59,3 +59,11 @@ htmlcov/
 .env
 
 quant-research/src/*.egg-info/
+quant-research/data/*.sqlite3
+quant-research/web/node_modules/
+quant-research/web/dist/
+quant-research/web/coverage/
+quant-research/web/*.tsbuildinfo
+quant-research/web/test-results/
+quant-research/web/playwright-report/
+.pnpm-store/
