@@ -9,6 +9,7 @@ import com.quanttrade.executor.domain.Position;
 import com.quanttrade.executor.domain.Signal;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -48,7 +49,8 @@ public class DefaultOrderPlanner implements OrderPlanner {
             raw.add(new RawIntent(target.symbol(), side, shares, price, Math.abs(deltaValue)));
         }
 
-        return applyTurnoverLimit(raw, snapshot.totalEquity(), signal.constraints().maxTurnoverPct());
+        List<OrderIntent> intents = applyTurnoverLimit(raw, snapshot.totalEquity(), signal.constraints().maxTurnoverPct());
+        return applyCashProtection(sortSellBeforeBuy(intents), snapshot.availableCash());
     }
 
     private List<OrderIntent> applyTurnoverLimit(List<RawIntent> raw, double equity, double maxTurnoverPct) {
@@ -70,6 +72,36 @@ public class DefaultOrderPlanner implements OrderPlanner {
             intents.add(new OrderIntent(intent.symbol(), intent.side(), scaledShares, limitPrice));
         }
         return intents;
+    }
+
+    private List<OrderIntent> sortSellBeforeBuy(List<OrderIntent> intents) {
+        return intents.stream()
+            .sorted(Comparator.comparingInt(intent -> intent.side() == OrderSide.SELL ? 0 : 1))
+            .toList();
+    }
+
+    private List<OrderIntent> applyCashProtection(List<OrderIntent> intents, double availableCash) {
+        double cashBudget = availableCash;
+        List<OrderIntent> protectedIntents = new ArrayList<>();
+
+        for (OrderIntent intent : intents) {
+            if (intent.side() == OrderSide.SELL) {
+                protectedIntents.add(intent);
+                // Planner assumes sell proceeds are available before buys; broker still enforces real cash.
+                cashBudget += intent.quantity() * intent.limitPrice();
+                continue;
+            }
+
+            int affordableShares = toLot(cashBudget / intent.limitPrice());
+            int quantity = Math.min(intent.quantity(), affordableShares);
+            if (quantity <= 0) {
+                continue;
+            }
+            protectedIntents.add(new OrderIntent(intent.symbol(), intent.side(), quantity, intent.limitPrice()));
+            cashBudget -= quantity * intent.limitPrice();
+        }
+
+        return protectedIntents;
     }
 
     private int toLot(double rawShares) {

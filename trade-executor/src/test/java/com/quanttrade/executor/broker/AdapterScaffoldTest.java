@@ -21,9 +21,9 @@ class AdapterScaffoldTest {
     }
 
     @Test
-    void httpSignalClientThrowsUntilImplemented() {
-        HttpSignalClient client = new HttpSignalClient("http://localhost:8000/signal");
-        assertThrows(UnsupportedOperationException.class, () -> client.fetchLatest("acct"));
+    void httpSignalClientFailsClosedWhenServiceUnavailable() {
+        HttpSignalClient client = new HttpSignalClient("http://127.0.0.1:1");
+        assertThrows(IllegalStateException.class, () -> client.fetchLatest("acct"));
     }
 
     @Test

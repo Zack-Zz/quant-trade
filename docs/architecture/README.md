@@ -18,7 +18,8 @@ The root document remains the original ultimate-goal source. Documents here reco
 1. [Ultimate Design Review](ultimate_design_review.md)
 2. [Target Architecture](target_architecture.md)
 3. [Roadmap](roadmap.md)
-4. Module designs in [modules](modules/)
+4. [Implementation Backlog](implementation_backlog.md)
+5. Module designs in [modules](modules/)
 
 ## Module Designs
 

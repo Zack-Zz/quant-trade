@@ -6,6 +6,8 @@ from datetime import UTC, date, datetime
 from uuid import uuid4
 
 from quant_research.backtest.engine import BacktestEngine, BacktestRequest
+from quant_research.analysis.market import MarketAnalyzer
+from quant_research.analysis.stock import StockAnalyzer
 from quant_research.data.market_provider import CsvMarketDataProvider, MarketDataProvider
 from quant_research.models.trading import PaperAccount, StrategyRun
 from quant_research.paper.simulator import DailyBarSimulator, SimulatorState
@@ -27,6 +29,8 @@ class ResearchService:
         self.repository = repository or ResearchRepository()
         self.strategy = DailyEtfStockStrategy()
         self.signal_service = SignalService(self.market_data)
+        self.market_analyzer = MarketAnalyzer(self.market_data)
+        self.stock_analyzer = StockAnalyzer(self.market_data)
 
     def overview(self) -> dict:
         """Return chart-ready system overview data for the Web home page."""
@@ -72,6 +76,18 @@ class ResearchService:
     def list_strategy_runs(self) -> list[dict]:
         """Return recent strategy runs for Web tables."""
         return self.repository.list_strategy_runs()
+
+    def market_analysis(self) -> dict:
+        """Return market regime, breadth, liquidity, and volatility analysis."""
+        return self.market_analyzer.analyze()
+
+    def stock_analysis(self) -> dict:
+        """Return ranked stock candidates with filter explanations."""
+        return self.stock_analyzer.analyze()
+
+    def data_quality(self) -> dict:
+        """Return local market-data quality diagnostics."""
+        return self.market_analyzer.data_quality()
 
     def get_strategy_run(self, run_id: str) -> dict | None:
         """Return one strategy run by id."""
@@ -136,12 +152,22 @@ class ResearchService:
         self.repository.save_signal(signal.signal_id, signal.model_dump(mode="json"))
         return updated
 
-    def create_signal(self, account_id: str) -> dict:
+    def create_signal(self, account_id: str, schema_version: str = "2.0.0") -> dict:
         """Create and persist a target-portfolio signal."""
-        signal = self.signal_service.create_latest_signal(account_id)
+        signal = self.signal_service.create_latest_signal(account_id, schema_version=schema_version)
         payload = signal.model_dump(mode="json")
         self.repository.save_signal(signal.signal_id, payload)
         return payload
+
+    def latest_signal(self, account_id: str) -> dict | None:
+        """Return the latest published signal for one account."""
+        for signal in self.repository.list_signals(limit=100):
+            if signal.get("account_id") != account_id:
+                continue
+            if signal.get("schema_version") == "2.0.0" and signal.get("status") != "PUBLISHED":
+                continue
+            return signal
+        return None
 
     def list_signals(self) -> list[dict]:
         """Return recent generated signals."""

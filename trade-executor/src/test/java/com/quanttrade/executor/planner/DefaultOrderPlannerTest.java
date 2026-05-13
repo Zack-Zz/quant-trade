@@ -60,6 +60,53 @@ class DefaultOrderPlannerTest {
         assertTrue(intents.stream().noneMatch(intent -> intent.symbol().equals("510300.SH") && intent.side() == OrderSide.SELL));
     }
 
+    @Test
+    void placesSellOrdersBeforeBuysSoCashIsReleasedFirst() {
+        Signal signal = sampleSignal();
+        AccountSnapshot snapshot = new AccountSnapshot(
+            "acct",
+            1_000_000,
+            50_000,
+            Map.of("510300.SH", new Position("510300.SH", 100_000, 3.0)),
+            Set.of(),
+            0,
+            0
+        );
+        MarketData marketData = new MarketData(Map.of("510300.SH", 4.0, "000333.SZ", 20.0));
+
+        List<OrderIntent> intents = planner.plan(signal, snapshot, marketData);
+
+        assertEquals(OrderSide.SELL, intents.get(0).side());
+        assertEquals(OrderSide.BUY, intents.get(1).side());
+    }
+
+    @Test
+    void scalesBuysToAvailableCashAfterExpectedSells() {
+        Signal signal = sampleSignal();
+        AccountSnapshot snapshot = new AccountSnapshot(
+            "acct",
+            1_000_000,
+            10_000,
+            Map.of("510300.SH", new Position("510300.SH", 90_000, 3.0)),
+            Set.of(),
+            0,
+            0
+        );
+        MarketData marketData = new MarketData(Map.of("510300.SH", 4.0, "000333.SZ", 20.0));
+
+        List<OrderIntent> intents = planner.plan(signal, snapshot, marketData);
+
+        double buyNotional = intents.stream()
+            .filter(intent -> intent.side() == OrderSide.BUY)
+            .mapToDouble(intent -> intent.quantity() * intent.limitPrice())
+            .sum();
+        double sellNotional = intents.stream()
+            .filter(intent -> intent.side() == OrderSide.SELL)
+            .mapToDouble(intent -> intent.quantity() * intent.limitPrice())
+            .sum();
+        assertTrue(buyNotional <= 10_000 + sellNotional);
+    }
+
     private Signal sampleSignal() {
         return new Signal(
             "1.0.0",

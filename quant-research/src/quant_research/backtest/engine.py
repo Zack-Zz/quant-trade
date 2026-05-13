@@ -18,6 +18,10 @@ class BacktestRequest(BaseModel):
     """Request used to run a local daily-bar backtest."""
 
     strategy_id: str = "etf_stock_daily_v1"
+    strategy_version: str = "v1"
+    data_version: str | None = None
+    engine_type: str = "DailyBarSmokeEngine"
+    benchmark: str | None = "510300.SH"
     symbols: list[str] = Field(default_factory=lambda: ["510300.SH", "159915.SZ", "600519.SH", "000333.SZ"])
     start_date: date
     end_date: date
@@ -60,6 +64,10 @@ class BacktestEngine:
         return BacktestRun(
             run_id=f"bt-{uuid4().hex[:12]}",
             strategy_id=request.strategy_id,
+            strategy_version=request.strategy_version,
+            data_version=request.data_version or self._data_version(request.end_date),
+            engine_type=request.engine_type,
+            benchmark=request.benchmark,
             start_date=request.start_date,
             end_date=request.end_date,
             initial_cash=request.initial_cash,
@@ -101,3 +109,7 @@ class BacktestEngine:
             annual_turnover_pct=round(annual_turnover, 6),
             trade_count=len(state.fills),
         )
+
+    def _data_version(self, end_date: date) -> str:
+        """Create a deterministic data version for the local CSV daily-bar cache."""
+        return f"csv-{end_date.strftime('%Y%m%d')}-v1"

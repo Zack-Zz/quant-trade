@@ -76,6 +76,10 @@ class BacktestRun(BaseModel):
 
     run_id: str
     strategy_id: str
+    strategy_version: str
+    data_version: str
+    engine_type: str
+    benchmark: str | None = None
     start_date: date
     end_date: date
     initial_cash: float

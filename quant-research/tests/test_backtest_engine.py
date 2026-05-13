@@ -17,6 +17,9 @@ def test_backtest_engine_runs_daily_bar_simulation() -> None:
     )
 
     assert result.metrics.trade_count > 0
+    assert result.strategy_version == "v1"
+    assert result.data_version == "csv-20260306-v1"
+    assert result.engine_type == "DailyBarSmokeEngine"
     assert result.equity_curve[-1].equity > 0
     assert result.positions
     assert result.fills[0].commission >= 5.0

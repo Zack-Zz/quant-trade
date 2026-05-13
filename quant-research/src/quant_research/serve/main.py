@@ -38,6 +38,12 @@ class StrategyRunRequest(BaseModel):
     trading_date: date | None = None
 
 
+class SignalGenerateRequest(BaseModel):
+    """API request body for generating a Signal v2 payload."""
+
+    account_id: str = Field(min_length=1, max_length=64, pattern=r"^[a-zA-Z0-9._:-]+$")
+
+
 @app.get("/health", response_model=ApiEnvelope)
 def health() -> ApiEnvelope:
     """Return service health status."""
@@ -61,7 +67,7 @@ def version() -> ApiEnvelope:
 @app.get("/signal", response_model=ApiEnvelope)
 def signal(account_id: str = Query(min_length=1, max_length=64)) -> ApiEnvelope:
     """Return the latest target-portfolio signal for one account."""
-    latest = research_service.create_signal(account_id=account_id)
+    latest = research_service.create_signal(account_id=account_id, schema_version="1.0.0")
     return ApiEnvelope(success=True, data=latest, meta={"source": "local"})
 
 
@@ -95,6 +101,24 @@ def api_market_bars(
     bars = research_service.market_data.get_bars(symbol=symbol, start=start, end=end)
     data = [bar.model_dump(mode="json") for bar in bars]
     return ApiEnvelope(success=True, data=data, meta={"total": len(data)})
+
+
+@app.get("/api/v1/data-quality", response_model=ApiEnvelope)
+def api_data_quality() -> ApiEnvelope:
+    """Return data quality diagnostics for the local market cache."""
+    return ApiEnvelope(success=True, data=research_service.data_quality())
+
+
+@app.get("/api/v1/analysis/market", response_model=ApiEnvelope)
+def api_market_analysis() -> ApiEnvelope:
+    """Return market trend, breadth, liquidity, volatility, and risk regime."""
+    return ApiEnvelope(success=True, data=research_service.market_analysis())
+
+
+@app.get("/api/v1/analysis/stocks", response_model=ApiEnvelope)
+def api_stock_analysis() -> ApiEnvelope:
+    """Return stock ranking and hard-filter explanations."""
+    return ApiEnvelope(success=True, data=research_service.stock_analysis())
 
 
 @app.get("/api/v1/strategies", response_model=ApiEnvelope)
@@ -171,6 +195,22 @@ def api_run_signal_for_paper_account(account_id: str) -> ApiEnvelope:
 def api_list_signals() -> ApiEnvelope:
     """Return recent generated signals."""
     return ApiEnvelope(success=True, data=research_service.list_signals())
+
+
+@app.post("/api/v1/signals/generate", response_model=ApiEnvelope)
+def api_generate_signal(request: SignalGenerateRequest) -> ApiEnvelope:
+    """Generate and persist a published Signal v2 payload."""
+    payload = research_service.create_signal(account_id=request.account_id, schema_version="2.0.0")
+    return ApiEnvelope(success=True, data=payload, meta={"schema_version": "2.0.0"})
+
+
+@app.get("/api/v1/signals/latest", response_model=ApiEnvelope)
+def api_latest_signal(account_id: str = Query(min_length=1, max_length=64)) -> ApiEnvelope:
+    """Return the latest published signal for an account."""
+    signal_payload = research_service.latest_signal(account_id)
+    if signal_payload is None:
+        return ApiEnvelope(success=False, error="signal not found")
+    return ApiEnvelope(success=True, data=signal_payload)
 
 
 @app.get("/api/v1/signals/{signal_id}", response_model=ApiEnvelope)

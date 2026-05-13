@@ -36,6 +36,34 @@ class DefaultRiskEngineTest {
         assertTrue(decision.approved());
     }
 
+    @Test
+    void rejectsPublishedV2SignalWhenIdempotencyKeyDoesNotMatchContract() {
+        Signal signal = new Signal(
+            "2.0.0",
+            "sig-v2",
+            "acct",
+            java.time.LocalDate.parse("2026-03-06"),
+            OffsetDateTime.parse("2026-03-06T15:00:00+08:00"),
+            "strategy",
+            "v2",
+            "DAILY_CLOSE",
+            "csv-20260306-v1",
+            "PUBLISHED",
+            List.of("510300.SH"),
+            0.2,
+            List.of(new PortfolioTarget("510300.SH", 0.5, 0.7, "trend")),
+            new SignalConstraints(0.2, 0.6, 0.01, 0.08, "DAILY_CLOSE", 100000000.0),
+            "checksum",
+            "legacy-key",
+            Map.of()
+        );
+        AccountSnapshot snapshot = new AccountSnapshot("acct", 1_000_000, 100_000, Map.of(), Set.of(), -0.001, 0.02);
+
+        var decision = riskEngine.evaluate(signal, snapshot);
+
+        assertFalse(decision.approved());
+    }
+
     private Signal sampleSignal(double singleLimit) {
         return new Signal(
             "1.0.0",
